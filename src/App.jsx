@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { Home, BarChart2, MapPin, Calendar, UploadCloud, HelpCircle, Menu } from 'lucide-react';
+import { Home, BarChart2, MapPin, Calendar, UploadCloud, HelpCircle, Menu, X, FileText } from 'lucide-react';
 import { processExcelFile } from './utils/dataProcessor';
 import DashboardInicio from './pages/DashboardInicio';
 import DashboardExecucao from './pages/DashboardExecucao';
@@ -40,13 +40,59 @@ const Sidebar = () => {
   );
 };
 
-const MobileHeader = () => (
+const MobileHeader = ({ onOpenMenu }) => (
   <div className="mobile-header-bar">
-    <Menu size={22} color="#fff" />
+    <button onClick={onOpenMenu} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+      <Menu size={24} color="#fff" />
+    </button>
     <span className="mobile-header-title">MONITORAMENTO DE CONVÊNIOS</span>
-    <HelpCircle size={20} color="#fff" />
+    <HelpCircle size={20} color="#fff" style={{ cursor: 'pointer' }} />
   </div>
 );
+
+const MobileMenuDrawer = ({ isOpen, onClose, triggerImport }) => {
+  const location = useLocation();
+
+  useEffect(() => {
+    onClose();
+  }, [location.pathname]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="mobile-drawer-overlay" onClick={onClose}>
+      <div className="mobile-drawer-content" onClick={(e) => e.stopPropagation()}>
+        <div className="mobile-drawer-header">
+          <span style={{ fontWeight: '700', fontSize: '15px', color: '#002B5E' }}>Menu Principal</span>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+            <X size={24} color="#333" />
+          </button>
+        </div>
+
+        <div className="mobile-drawer-links">
+          <Link to="/" className={`mobile-drawer-link ${location.pathname === '/' ? 'active' : ''}`}>
+            <Home size={18} /> Início (Visão Geral)
+          </Link>
+          <Link to="/execucao" className={`mobile-drawer-link ${location.pathname === '/execucao' ? 'active' : ''}`}>
+            <BarChart2 size={18} /> Execução por Etapa
+          </Link>
+          <Link to="/mapa" className={`mobile-drawer-link ${location.pathname === '/mapa' ? 'active' : ''}`}>
+            <MapPin size={18} /> Mapa de Obras
+          </Link>
+          <Link to="/prazos" className={`mobile-drawer-link ${location.pathname === '/prazos' ? 'active' : ''}`}>
+            <Calendar size={18} /> Gestão de Prazos
+          </Link>
+        </div>
+
+        <div className="mobile-drawer-footer">
+          <button className="btn-import-mobile" onClick={() => { onClose(); triggerImport(); }}>
+            <UploadCloud size={18} /> Importar Nova Planilha
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const MobileBottomNav = () => {
   const location = useLocation();
@@ -75,6 +121,7 @@ const MobileBottomNav = () => {
 export default function App() {
   const [dadosPlanilha, setDadosPlanilha] = useState([]);
   const [dataAtualizacao, setDataAtualizacao] = useState(null);
+  const [menuMobileAberto, setMenuMobileAberto] = useState(false);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -106,7 +153,13 @@ export default function App() {
   return (
     <BrowserRouter>
       <div className="app-container">
-        <MobileHeader />
+        
+        <MobileHeader onOpenMenu={() => setMenuMobileAberto(true)} />
+        <MobileMenuDrawer 
+          isOpen={menuMobileAberto} 
+          onClose={() => setMenuMobileAberto(false)} 
+          triggerImport={() => fileInputRef.current.click()}
+        />
 
         <Sidebar />
         
