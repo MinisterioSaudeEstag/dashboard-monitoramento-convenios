@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { Home, BarChart2, MapPin, Calendar, UploadCloud, HelpCircle } from 'lucide-react';
+import { Home, BarChart2, MapPin, Calendar, UploadCloud, HelpCircle, Menu } from 'lucide-react';
 import { processExcelFile } from './utils/dataProcessor';
 import DashboardInicio from './pages/DashboardInicio';
 import DashboardExecucao from './pages/DashboardExecucao';
 import DashboardMapa from './pages/DashboardMapa';
 import DashboardPrazos from './pages/DashboardPrazos';
+import './index.css';
 
 const Sidebar = () => {
   const location = useLocation();
@@ -36,6 +37,38 @@ const Sidebar = () => {
         <img src="/logo-sus.png" alt="Sistema Único de Saúde" />
       </div>
     </aside>
+  );
+};
+
+const MobileHeader = () => (
+  <div className="mobile-header-bar">
+    <Menu size={22} color="#fff" />
+    <span className="mobile-header-title">MONITORAMENTO DE CONVÊNIOS</span>
+    <HelpCircle size={20} color="#fff" />
+  </div>
+);
+
+const MobileBottomNav = () => {
+  const location = useLocation();
+  return (
+    <nav className="mobile-bottom-nav">
+      <Link to="/" className={`mobile-nav-item ${location.pathname === '/' ? 'active' : ''}`}>
+        <Home size={20} />
+        <span>Início</span>
+      </Link>
+      <Link to="/execucao" className={`mobile-nav-item ${location.pathname === '/execucao' ? 'active' : ''}`}>
+        <BarChart2 size={20} />
+        <span>Execução</span>
+      </Link>
+      <Link to="/mapa" className={`mobile-nav-item ${location.pathname === '/mapa' ? 'active' : ''}`}>
+        <MapPin size={20} />
+        <span>Mapa</span>
+      </Link>
+      <Link to="/prazos" className={`mobile-nav-item ${location.pathname === '/prazos' ? 'active' : ''}`}>
+        <Calendar size={20} />
+        <span>Prazos</span>
+      </Link>
+    </nav>
   );
 };
 
@@ -73,6 +106,8 @@ export default function App() {
   return (
     <BrowserRouter>
       <div className="app-container">
+        <MobileHeader />
+
         <Sidebar />
         
         <main className="main-content">
@@ -110,6 +145,8 @@ export default function App() {
             </Routes>
           </div>
         </main>
+
+        <MobileBottomNav />
       </div>
     </BrowserRouter>
   );
