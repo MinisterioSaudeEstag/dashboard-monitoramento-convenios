@@ -118,33 +118,100 @@ const MobileBottomNav = () => {
   );
 };
 
-export default function App() {
+function App() {
   const [dadosPlanilha, setDadosPlanilha] = useState([]);
   const [dataAtualizacao, setDataAtualizacao] = useState(null);
   const [menuMobileAberto, setMenuMobileAberto] = useState(false);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    const dadosSalvos = localStorage.getItem('sismob_dados');
-    const dataSalva = localStorage.getItem('sismob_data_atualizacao');
-    
-    if (dadosSalvos) setDadosPlanilha(JSON.parse(dadosSalvos));
-    if (dataSalva) setDataAtualizacao(dataSalva);
+    const buscarDadosNuvem = async () => {
+      const { data, error } = await supabase
+      .from('convenios_nuvem')
+      .select('*')
+      .eq('id', 1)
+      .maybeSingle();
+
+      if (error) {
+        console.error('Erro ao buscar dados da nuvem:', error);
+        return;
+      }
+
+      if (data) {
+        if (data.dados_planilha) setDadosPlanilha(data.dados_planilha);
+        if (data.data_atualizacao) setDataAtualizacao(data.data_atualizacao);
+      }
+    };
+
+    buscarDadosNuvem();
+
+    const inscricaoRealtime = supabase 
+      .channel('mudancas-convenios')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'convenios_nuvem',
+          filter: 'id=eq.1'
+        },
+        (payload) => {
+          console.log("Planilha atualizada na nuvem! Recarregando gráficos...");
+          const novosDados = payload.new;
+
+          if (novosDados.dados_planilha) setDadosPlanilha(novosDados.dados_planilha);
+          if (novosDados.data_atualizacao) setDataAtualizacao(novosDados.data_atualizacao);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(inscricaoRealtime);
+    }
   }, []);
 
-  const handleImport = (e) => {
+  const salvarPlanilhaNuvem = async (jsonDados) => {
+    setDadosPlanilha(jsonDados);
+
+    const agora = new Date();
+    const dataFormatada = `${agora.toLocaleDateString('pt-BR')} ${agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+    setDataAtualizacao(dataFormatada);
+
+    const { error } = await supabase
+      .from('convenios_nuvem')
+      .update({
+        dados_planilha: jsonDados,
+        data_atualizacao: dataFormatada
+      })
+      .eq('id', 1);
+
+      if (error) console.error("Erro ao salvar a planilha geral no Supabase:", error);
+  }
+
+  const handleImport = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    processExcelFile(file, (jsonDados) => {
+    processExcelFile(file, async (jsonDados) => {
+      
       setDadosPlanilha(jsonDados);
       
       const agora = new Date();
       const dataFormatada = `${agora.toLocaleDateString('pt-BR')} ${agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
       setDataAtualizacao(dataFormatada);
 
-      localStorage.setItem('sismob_dados', JSON.stringify(jsonDados));
-      localStorage.setItem('sismob_data_atualizacao', dataFormatada);
+      const { error } = await supabase
+        .from('convenios_nuvem')
+        .update({
+          dados_planilha: jsonDados,
+          data_atualizacao: dataFormatada
+        })
+        .eq('id', 1);
+
+      if (error) {
+        alert("Erro ao salvar a planilha no Supabase. Verifique a conexão.");
+        console.error(error);
+      }
     });
     
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -204,3 +271,5 @@ export default function App() {
     </BrowserRouter>
   );
 }
+
+export default App;
