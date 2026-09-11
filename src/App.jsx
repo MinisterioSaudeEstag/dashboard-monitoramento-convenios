@@ -6,6 +6,7 @@ import DashboardInicio from './pages/DashboardInicio';
 import DashboardExecucao from './pages/DashboardExecucao';
 import DashboardMapa from './pages/DashboardMapa';
 import DashboardPrazos from './pages/DashboardPrazos';
+import { supabase } from './utils/supabase';
 import './index.css';
 
 const Sidebar = () => {
